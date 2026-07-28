@@ -1,0 +1,23 @@
+{
+  "name": "insomnia-plugin-local-snapshot",
+  "version": "1.0.0",
+  "description": "Local-only redacted Insomnia workspace snapshots for quick backups before risky API changes.",
+  "main": "main.js",
+  "license": "MIT",
+  "author": "oliviajohns5",
+  "repository": { "type": "git", "url": "git+https://github.com/oliviajohns5/insomnia-plugin-local-snapshot.git" },
+  "bugs": { "url": "https://github.com/oliviajohns5/insomnia-plugin-local-snapshot/issues" },
+  "homepage": "https://github.com/oliviajohns5/insomnia-plugin-local-snapshot#readme",
+  "keywords": ["insomnia", "insomnia-plugin", "local-snapshot", "backup", "redaction", "api-safety"],
+  "files": ["main.js", "README.md", "LICENSE", "icon.svg", "cover.svg"],
+  "scripts": { "test": "node test.js", "test:packaged": "node qa-packaged.js", "pack:dry": "npm pack --dry-run" },
+  "insomnia": {
+    "name": "local-snapshot",
+    "displayName": "Local Snapshot",
+    "description": "Exports a local redacted Markdown snapshot of your Insomnia workspace before risky API changes.",
+    "images": { "icon": "icon.svg", "cover": "cover.svg" },
+    "publisher": { "name": "oliviajohns5" },
+    "unlisted": false
+  },
+  "devDependencies": {}
+}
