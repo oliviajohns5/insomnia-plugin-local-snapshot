@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/insomnia-plugin-local-snapshot.svg)](https://www.npmjs.com/package/insomnia-plugin-local-snapshot)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Local-only redacted workspace snapshots for Insomnia.
+Local-only redacted workspace snapshots for Insomnia. v1.0.1 adds timestamped filenames and SHA-256 fingerprints of the redacted snapshot.
 
 Local Snapshot exports a Markdown file containing a redacted workspace export plus a small resource summary. It is intended as a quick safety backup before risky API work, migrations, imports, or destructive request sessions.
 
@@ -13,6 +13,8 @@ Local Snapshot exports a Markdown file containing a redacted workspace export pl
 - Uses Insomnia export with `includePrivate: false`
 - Redacts secret-like values
 - Counts requests, folders, environments, specs, and total resources
+- Adds a SHA-256 fingerprint of the redacted snapshot
+- Uses timestamped default filenames
 - No sync backend
 - No cloud account
 - No telemetry

@@ -32,10 +32,19 @@ function countResources(raw) {
     return counts;
   } catch { return { total: 0, requests: 0, folders: 0, environments: 0, specs: 0 }; }
 }
+function snapshotHash(raw) {
+  return require('crypto').createHash('sha256').update(redactText(raw), 'utf8').digest('hex');
+}
+
+function timestampSlug(date = new Date()) {
+  return date.toISOString().replace(/[:.]/g, '-');
+}
+
 function makeSnapshot(raw) {
   const counts = countResources(raw);
   const redacted = redactText(raw);
-  return `# Insomnia Local Snapshot\n\nGenerated: ${new Date().toISOString()}\n\nLocal-only snapshot. Secret-like values are redacted. Export requested with includePrivate=false.\n\n## Summary\n\n- Resources: ${counts.total}\n- Requests: ${counts.requests}\n- Folders: ${counts.folders}\n- Environments: ${counts.environments}\n- Specs: ${counts.specs}\n\n## Redacted Workspace Export\n\n\`\`\`json\n${redacted}\n\`\`\`\n`;
+  const hash = snapshotHash(raw);
+  return `# Insomnia Local Snapshot\n\nGenerated: ${new Date().toISOString()}\n\nLocal-only snapshot. Secret-like values are redacted. Export requested with includePrivate=false.\n\n## Summary\n\n- Resources: ${counts.total}\n- Requests: ${counts.requests}\n- Folders: ${counts.folders}\n- Environments: ${counts.environments}\n- Specs: ${counts.specs}\n- Redacted SHA-256: ${hash}\n\n## Redacted Workspace Export\n\n\`\`\`json\n${redacted}\n\`\`\`\n`;
 }
 async function getWritableExportPath(context, fileName) {
   const path = require('path'); const candidates=[];
@@ -47,12 +56,12 @@ const action = { label: 'Local Snapshot: Export Redacted Snapshot', icon: 'fa-ca
   const raw = await context.data.export.insomnia({ includePrivate: false, format: 'json' });
   const report = makeSnapshot(raw);
   const fs = require('fs'); let output=null;
-  if (context.app && typeof context.app.showSaveDialog === 'function') output = await context.app.showSaveDialog({ defaultPath: 'insomnia-local-snapshot.md' });
-  if (!output) output = await getWritableExportPath(context, 'insomnia-local-snapshot.md');
+  if (context.app && typeof context.app.showSaveDialog === 'function') output = await context.app.showSaveDialog({ defaultPath: `insomnia-local-snapshot-${timestampSlug()}.md` });
+  if (!output) output = await getWritableExportPath(context, `insomnia-local-snapshot-${timestampSlug()}.md`);
   fs.writeFileSync(output, report, 'utf8');
   if (context.app && typeof context.app.alert === 'function') await context.app.alert('Local Snapshot exported', output);
 }};
 module.exports.workspaceActions=[action];
 module.exports.requestGroupActions=[action];
 module.exports.requestActions=[action];
-module.exports.__test={countResources,getWritableExportPath,makeSnapshot,redact,redactText};
+module.exports.__test={countResources,getWritableExportPath,makeSnapshot,redact,redactText,snapshotHash,timestampSlug};
