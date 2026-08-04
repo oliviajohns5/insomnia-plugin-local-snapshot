@@ -3,13 +3,14 @@
 [![npm version](https://img.shields.io/npm/v/insomnia-plugin-local-snapshot.svg)](https://www.npmjs.com/package/insomnia-plugin-local-snapshot)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Local-only redacted workspace snapshots for Insomnia. v1.0.1 adds timestamped filenames and SHA-256 fingerprints of the redacted snapshot.
+Local-only redacted workspace snapshots for Insomnia. v1.1.0 adds a compact redacted JSON sidecar next to the Markdown snapshot for diffing and automation.
 
-Local Snapshot exports a Markdown file containing a redacted workspace export plus a small resource summary. It is intended as a quick safety backup before risky API work, migrations, imports, or destructive request sessions.
+Local Snapshot exports a Markdown file and matching JSON file containing a redacted workspace export plus a small resource summary. It is intended as a quick safety backup before risky API work, migrations, imports, or destructive request sessions.
 
 ## Features
 
 - Exports a local Markdown snapshot
+- Exports a compact redacted `.json` sidecar next to the Markdown file
 - Uses Insomnia export with `includePrivate: false`
 - Redacts secret-like values
 - Counts requests, folders, environments, specs, and total resources
@@ -41,6 +42,30 @@ Run:
 
 ```text
 Local Snapshot: Export Redacted Snapshot
+```
+
+The action writes two local files:
+
+```text
+insomnia-local-snapshot-<timestamp>.md
+insomnia-local-snapshot-<timestamp>.json
+```
+
+The JSON sidecar uses schema:
+
+```json
+{
+  "schema": "insomnia-local-snapshot/v1",
+  "counts": {
+    "total": 4,
+    "requests": 1,
+    "folders": 1,
+    "environments": 1,
+    "specs": 1
+  },
+  "redactedSha256": "...",
+  "redactedExport": {}
+}
 ```
 
 The action is exposed through `workspaceActions`, `requestGroupActions`, and `requestActions`. In Insomnia 13 it may appear in the New Request dropdown.

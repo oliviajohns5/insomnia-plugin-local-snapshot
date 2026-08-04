@@ -1,7 +1,7 @@
 {
   "name": "insomnia-plugin-local-snapshot",
-  "version": "1.0.1",
-  "description": "Local-only redacted Insomnia workspace snapshots with resource counts, timestamped filenames, and SHA-256 integrity fingerprints.",
+  "version": "1.1.0",
+  "description": "Local-only redacted Insomnia workspace snapshots with Markdown plus JSON sidecar exports, resource counts, timestamps, and SHA-256 fingerprints.",
   "main": "main.js",
   "license": "MIT",
   "author": "oliviajohns5",
@@ -36,7 +36,7 @@
   "insomnia": {
     "name": "local-snapshot",
     "displayName": "Local Snapshot",
-    "description": "Exports a local redacted Markdown snapshot of your Insomnia workspace before risky API changes.",
+    "description": "Exports local redacted Markdown and JSON snapshots of your Insomnia workspace before risky API changes.",
     "images": {
       "icon": "icon.svg",
       "cover": "cover.svg"

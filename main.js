@@ -44,7 +44,27 @@ function makeSnapshot(raw) {
   const counts = countResources(raw);
   const redacted = redactText(raw);
   const hash = snapshotHash(raw);
-  return `# Insomnia Local Snapshot\n\nGenerated: ${new Date().toISOString()}\n\nLocal-only snapshot. Secret-like values are redacted. Export requested with includePrivate=false.\n\n## Summary\n\n- Resources: ${counts.total}\n- Requests: ${counts.requests}\n- Folders: ${counts.folders}\n- Environments: ${counts.environments}\n- Specs: ${counts.specs}\n- Redacted SHA-256: ${hash}\n\n## Redacted Workspace Export\n\n\`\`\`json\n${redacted}\n\`\`\`\n`;
+  return `# Insomnia Local Snapshot\n\nGenerated: ${new Date().toISOString()}\n\nLocal-only snapshot. Secret-like values are redacted. Export requested with includePrivate=false.\n\n## Summary\n\n- Resources: ${counts.total}\n- Requests: ${counts.requests}\n- Folders: ${counts.folders}\n- Environments: ${counts.environments}\n- Specs: ${counts.specs}\n- Redacted SHA-256: ${hash}\n\n## Sidecar JSON\n\nA compact redacted JSON sidecar is written next to this Markdown file for diffing and automation.\n\n## Redacted Workspace Export\n\n\`\`\`json\n${redacted}\n\`\`\`\n`;
+}
+function parseRedactedExport(raw) {
+  const redacted = redactText(raw);
+  try { return JSON.parse(redacted); } catch { return { raw: redacted }; }
+}
+function makeSnapshotJson(raw) {
+  const counts = countResources(raw);
+  const redactedSha256 = snapshotHash(raw);
+  return JSON.stringify({
+    schema: 'insomnia-local-snapshot/v1',
+    generatedAt: new Date().toISOString(),
+    localOnly: true,
+    includePrivate: false,
+    counts,
+    redactedSha256,
+    redactedExport: parseRedactedExport(raw),
+  }, null, 2) + '\n';
+}
+function jsonSidecarPath(markdownPath) {
+  return String(markdownPath).replace(/\.md$/i, '') + '.json';
 }
 async function getWritableExportPath(context, fileName) {
   const path = require('path'); const candidates=[];
@@ -55,13 +75,16 @@ async function getWritableExportPath(context, fileName) {
 const action = { label: 'Local Snapshot: Export Redacted Snapshot', icon: 'fa-camera', action: async (context) => {
   const raw = await context.data.export.insomnia({ includePrivate: false, format: 'json' });
   const report = makeSnapshot(raw);
+  const jsonReport = makeSnapshotJson(raw);
   const fs = require('fs'); let output=null;
   if (context.app && typeof context.app.showSaveDialog === 'function') output = await context.app.showSaveDialog({ defaultPath: `insomnia-local-snapshot-${timestampSlug()}.md` });
   if (!output) output = await getWritableExportPath(context, `insomnia-local-snapshot-${timestampSlug()}.md`);
+  const jsonOutput = jsonSidecarPath(output);
   fs.writeFileSync(output, report, 'utf8');
-  if (context.app && typeof context.app.alert === 'function') await context.app.alert('Local Snapshot exported', output);
+  fs.writeFileSync(jsonOutput, jsonReport, 'utf8');
+  if (context.app && typeof context.app.alert === 'function') await context.app.alert('Local Snapshot exported', `Markdown: ${output}\nJSON: ${jsonOutput}`);
 }};
 module.exports.workspaceActions=[action];
 module.exports.requestGroupActions=[action];
 module.exports.requestActions=[action];
-module.exports.__test={countResources,getWritableExportPath,makeSnapshot,redact,redactText,snapshotHash,timestampSlug};
+module.exports.__test={countResources,getWritableExportPath,jsonSidecarPath,makeSnapshot,makeSnapshotJson,parseRedactedExport,redact,redactText,snapshotHash,timestampSlug};
