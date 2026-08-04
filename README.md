@@ -47,8 +47,8 @@ Local Snapshot: Export Redacted Snapshot
 The action writes two local files:
 
 ```text
-insomnia-local-snapshot-<timestamp>.md
-insomnia-local-snapshot-<timestamp>.json
+insomnia-local-snapshot-TIMESTAMP.md
+insomnia-local-snapshot-TIMESTAMP.json
 ```
 
 The JSON sidecar uses schema:

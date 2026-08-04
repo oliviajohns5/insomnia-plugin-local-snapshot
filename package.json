@@ -1,6 +1,6 @@
 {
   "name": "insomnia-plugin-local-snapshot",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Local-only redacted Insomnia workspace snapshots with Markdown plus JSON sidecar exports, resource counts, timestamps, and SHA-256 fingerprints.",
   "main": "main.js",
   "license": "MIT",
