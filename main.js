@@ -32,6 +32,25 @@ function countResources(raw) {
     return counts;
   } catch { return { total: 0, requests: 0, folders: 0, environments: 0, specs: 0 }; }
 }
+function routeInventory(raw) {
+  try {
+    const parsed = JSON.parse(safeString(raw));
+    const resources = Array.isArray(parsed.resources) ? parsed.resources : [];
+    const methods = {};
+    const hosts = {};
+    for (const r of resources) {
+      const t = String(r._type || r.type || '').toLowerCase();
+      if (!(t.includes('request') && !t.includes('group'))) continue;
+      const method = String(r.method || 'GET').toUpperCase();
+      methods[method] = (methods[method] || 0) + 1;
+      try {
+        const host = new URL(String(r.url || '')).hostname;
+        if (host) hosts[host] = (hosts[host] || 0) + 1;
+      } catch {}
+    }
+    return { methods, hosts };
+  } catch { return { methods: {}, hosts: {} }; }
+}
 function snapshotHash(raw) {
   return require('crypto').createHash('sha256').update(redactText(raw), 'utf8').digest('hex');
 }
@@ -42,9 +61,12 @@ function timestampSlug(date = new Date()) {
 
 function makeSnapshot(raw) {
   const counts = countResources(raw);
+  const inventory = routeInventory(raw);
   const redacted = redactText(raw);
   const hash = snapshotHash(raw);
-  return `# Insomnia Local Snapshot\n\nGenerated: ${new Date().toISOString()}\n\nLocal-only snapshot. Secret-like values are redacted. Export requested with includePrivate=false.\n\n## Summary\n\n- Resources: ${counts.total}\n- Requests: ${counts.requests}\n- Folders: ${counts.folders}\n- Environments: ${counts.environments}\n- Specs: ${counts.specs}\n- Redacted SHA-256: ${hash}\n\n## Sidecar JSON\n\nA compact redacted JSON sidecar is written next to this Markdown file for diffing and automation.\n\n## Redacted Workspace Export\n\n\`\`\`json\n${redacted}\n\`\`\`\n`;
+  const methodLines = Object.entries(inventory.methods).sort().map(([k, v]) => `- ${k}: ${v}`).join('\n') || '- none';
+  const hostLines = Object.entries(inventory.hosts).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([k, v]) => `- ${k}: ${v}`).join('\n') || '- none';
+  return `# Insomnia Local Snapshot\n\nGenerated: ${new Date().toISOString()}\n\nLocal-only snapshot. Secret-like values are redacted. Export requested with includePrivate=false.\n\n## Summary\n\n- Resources: ${counts.total}\n- Requests: ${counts.requests}\n- Folders: ${counts.folders}\n- Environments: ${counts.environments}\n- Specs: ${counts.specs}\n- Redacted SHA-256: ${hash}\n\n## Route Inventory\n\n### Methods\n\n${methodLines}\n\n### Hosts\n\n${hostLines}\n\n## Sidecar JSON\n\nA compact redacted JSON sidecar is written next to this Markdown file for diffing and automation.\n\n## Redacted Workspace Export\n\n\`\`\`json\n${redacted}\n\`\`\`\n`;
 }
 function parseRedactedExport(raw) {
   const redacted = redactText(raw);
@@ -59,6 +81,7 @@ function makeSnapshotJson(raw) {
     localOnly: true,
     includePrivate: false,
     counts,
+    routeInventory: routeInventory(raw),
     redactedSha256,
     redactedExport: parseRedactedExport(raw),
   }, null, 2) + '\n';
@@ -87,4 +110,4 @@ const action = { label: 'Local Snapshot: Export Redacted Snapshot', icon: 'fa-ca
 module.exports.workspaceActions=[action];
 module.exports.requestGroupActions=[action];
 module.exports.requestActions=[action];
-module.exports.__test={countResources,getWritableExportPath,jsonSidecarPath,makeSnapshot,makeSnapshotJson,parseRedactedExport,redact,redactText,snapshotHash,timestampSlug};
+module.exports.__test={countResources,getWritableExportPath,jsonSidecarPath,makeSnapshot,makeSnapshotJson,parseRedactedExport,redact,redactText,routeInventory,snapshotHash,timestampSlug};

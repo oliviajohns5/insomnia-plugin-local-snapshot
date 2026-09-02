@@ -10,7 +10,7 @@ const t = plugin.__test;
 const fake = 'sk-' + 'a'.repeat(30);
 const workspace = JSON.stringify({
   resources: [
-    { _type: 'request', name: 'A', url: 'https://x.test?a=' + fake },
+    { _type: 'request', name: 'A', method: 'POST', url: 'https://x.test?a=' + fake },
     { _type: 'request_group', name: 'Folder' },
     { _type: 'environment', name: 'Env', data: { api_key: fake } },
     { _type: 'apiSpec', contents: '{}' }
@@ -48,6 +48,8 @@ async function main() {
   assert(snap.includes('# Insomnia Local Snapshot'));
   assert(snap.includes('Resources: 4'));
   assert(snap.includes('Redacted SHA-256:'));
+  assert(snap.includes('## Route Inventory'));
+  assert(snap.includes('- POST: 1'));
   assert.strictEqual(t.snapshotHash(workspace).length, 64);
   assert(t.timestampSlug(new Date('2026-01-01T00:00:00.000Z')).includes('2026-01-01T00-00-00-000Z'));
   assert(!snap.includes(fake));
@@ -56,6 +58,8 @@ async function main() {
   const json = JSON.parse(jsonText);
   assert.strictEqual(json.schema, 'insomnia-local-snapshot/v1');
   assert.deepStrictEqual(json.counts, counts);
+  assert.strictEqual(json.routeInventory.methods.POST, 1);
+  assert.strictEqual(json.routeInventory.hosts['x.test'], 1);
   assert.strictEqual(json.redactedSha256, t.snapshotHash(workspace));
   assert(json.redactedExport.resources, 'redacted export is structured JSON');
   assert(!jsonText.includes(fake), 'JSON sidecar redacts secrets');

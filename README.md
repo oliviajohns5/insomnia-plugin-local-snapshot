@@ -105,3 +105,9 @@ npm pack --dry-run
 ## License
 
 MIT
+
+## Changelog
+
+### 1.1.2
+
+- Adds route inventory summaries by HTTP method and host to Markdown and JSON snapshots.
