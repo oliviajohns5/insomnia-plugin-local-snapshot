@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/insomnia-plugin-local-snapshot.svg)](https://www.npmjs.com/package/insomnia-plugin-local-snapshot)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Local-only redacted workspace snapshots for Insomnia. v1.1.0 adds a compact redacted JSON sidecar next to the Markdown snapshot for diffing and automation.
+Local-only redacted workspace snapshots for Insomnia. v1.1.3 adds structured key-aware redaction and a safe fallback when Insomnia export APIs are unavailable.
 
 Local Snapshot exports a Markdown file and matching JSON file containing a redacted workspace export plus a small resource summary. It is intended as a quick safety backup before risky API work, migrations, imports, or destructive request sessions.
 
@@ -78,6 +78,8 @@ The action is exposed through `workspaceActions`, `requestGroupActions`, and `re
 - No account required
 - Exports with `includePrivate: false`
 - Secret-like values are redacted before writing the snapshot
+- Secret-like JSON keys are redacted structurally before Markdown and JSON output
+- If Insomnia export is unavailable in a context, writes a warning-only local snapshot instead of throwing
 
 ## Development
 
@@ -107,6 +109,11 @@ npm pack --dry-run
 MIT
 
 ## Changelog
+
+### 1.1.3
+
+- Adds structured JSON key-aware redaction before Markdown and JSON snapshot output.
+- Handles missing or throwing Insomnia export APIs with a warning-only local snapshot.
 
 ### 1.1.2
 

@@ -8,20 +8,21 @@ const plugin = require('./main');
 const t = plugin.__test;
 
 const fake = 'sk-' + 'a'.repeat(30);
+const shortSecret = 'short';
 const workspace = JSON.stringify({
   resources: [
-    { _type: 'request', name: 'A', method: 'POST', url: 'https://x.test?a=' + fake },
+    { _type: 'request', name: 'A', method: 'POST', url: 'https://x.test?a=' + fake, headers: [{ name: 'Authorization', value: 'Bearer ' + shortSecret }] },
     { _type: 'request_group', name: 'Folder' },
-    { _type: 'environment', name: 'Env', data: { api_key: fake } },
+    { _type: 'environment', name: 'Env', data: { api_key: fake, nested: { password: shortSecret, clientSecret: 'camel-case-secret', publicValue: 'visible' } } },
     { _type: 'apiSpec', contents: '{}' }
   ]
 });
 
-function ctx(out) {
+function ctx(out, dataExport) {
   const alerts = [];
   return {
     alerts,
-    data: { export: { insomnia: async () => workspace } },
+    data: dataExport === undefined ? { export: { insomnia: async () => workspace } } : dataExport,
     app: {
       showSaveDialog: async () => out,
       getPath: async k => k === 'documents' ? os.tmpdir() : '',
@@ -42,7 +43,18 @@ async function main() {
   assert.strictEqual(counts.environments, 1);
   assert.strictEqual(counts.specs, 1);
 
+  assert(t.isSecretKey('api_key'));
+  assert(t.isSecretKey('client-secret'));
+  assert(t.isSecretKey('clientSecret'));
+  assert(!t.isSecretKey('publicValue'));
   assert(!t.redactText(workspace).includes(fake));
+
+  const structured = t.parseRedactedExport(workspace);
+  assert.strictEqual(structured.resources[2].data.api_key, '[REDACTED]');
+  assert.strictEqual(structured.resources[2].data.nested.password, '[REDACTED]');
+  assert.strictEqual(structured.resources[2].data.nested.clientSecret, '[REDACTED]');
+  assert.strictEqual(structured.resources[2].data.nested.publicValue, 'visible');
+  assert.strictEqual(structured.resources[0].headers[0].value, '[REDACTED]');
 
   const snap = t.makeSnapshot(workspace);
   assert(snap.includes('# Insomnia Local Snapshot'));
@@ -53,6 +65,8 @@ async function main() {
   assert.strictEqual(t.snapshotHash(workspace).length, 64);
   assert(t.timestampSlug(new Date('2026-01-01T00:00:00.000Z')).includes('2026-01-01T00-00-00-000Z'));
   assert(!snap.includes(fake));
+  assert(!snap.includes('"password": "short"'));
+  assert(snap.includes('"password": "[REDACTED]"'));
 
   const jsonText = t.makeSnapshotJson(workspace);
   const json = JSON.parse(jsonText);
@@ -62,7 +76,15 @@ async function main() {
   assert.strictEqual(json.routeInventory.hosts['x.test'], 1);
   assert.strictEqual(json.redactedSha256, t.snapshotHash(workspace));
   assert(json.redactedExport.resources, 'redacted export is structured JSON');
+  assert.strictEqual(json.redactedExport.resources[2].data.api_key, '[REDACTED]');
   assert(!jsonText.includes(fake), 'JSON sidecar redacts secrets');
+
+  const fallback = await t.exportInsomnia({ data: {} });
+  assert(fallback.warning.includes('unavailable'));
+  assert.strictEqual(JSON.parse(fallback.raw).resources.length, 0);
+  const thrown = await t.exportInsomnia({ data: { export: { insomnia: async () => { throw new Error('boom'); } } } });
+  assert(thrown.warning.includes('boom'));
+  assert(t.makeSnapshot(thrown.raw).includes('snapshotWarnings'));
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'local-snapshot-'));
   try {
@@ -82,6 +104,12 @@ async function main() {
       assert(c.alerts[0].m.includes('.md'));
       assert(c.alerts[0].m.includes('.json'));
     }
+
+    const unavailableOut = path.join(tmp, 'unavailable.md');
+    const unavailableCtx = ctx(unavailableOut, {});
+    await plugin.workspaceActions[0].action(unavailableCtx);
+    assert(fs.readFileSync(unavailableOut, 'utf8').includes('snapshotWarnings'));
+    assert(unavailableCtx.alerts[0].m.includes('Warning:'));
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
