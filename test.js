@@ -64,6 +64,9 @@ async function main() {
   assert(snap.includes('- POST: 1'));
   assert.strictEqual(t.snapshotHash(workspace).length, 64);
   assert(t.timestampSlug(new Date('2026-01-01T00:00:00.000Z')).includes('2026-01-01T00-00-00-000Z'));
+  assert.strictEqual(t.normalizeSaveDialogResult('/tmp/report.md'), '/tmp/report.md');
+  assert.strictEqual(t.normalizeSaveDialogResult({ filePath: '/tmp/report.md', canceled: false }), '/tmp/report.md');
+  assert.strictEqual(t.normalizeSaveDialogResult({ canceled: true }), null);
   assert(!snap.includes(fake));
   assert(!snap.includes('"password": "short"'));
   assert(snap.includes('"password": "[REDACTED]"'));
@@ -104,6 +107,11 @@ async function main() {
       assert(c.alerts[0].m.includes('.md'));
       assert(c.alerts[0].m.includes('.json'));
     }
+
+    const objectOut = path.join(tmp, 'object.md');
+    await plugin.requestActions[0].action(ctx({ filePath: objectOut, canceled: false }));
+    assert(fs.existsSync(objectOut), 'object save dialog writes Markdown');
+    assert(fs.existsSync(objectOut.replace(/\.md$/i, '.json')), 'object save dialog writes JSON sidecar');
 
     const unavailableOut = path.join(tmp, 'unavailable.md');
     const unavailableCtx = ctx(unavailableOut, {});

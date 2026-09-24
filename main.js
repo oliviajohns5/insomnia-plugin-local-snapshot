@@ -138,6 +138,16 @@ function makeSnapshotJson(raw) {
     redactedExport: parseRedactedExport(raw),
   }, null, 2) + '\n';
 }
+function normalizeSaveDialogResult(result) {
+  if (!result) return null;
+  if (typeof result === 'string') return result;
+  if (typeof result === 'object') {
+    if (result.canceled) return null;
+    if (typeof result.filePath === 'string' && result.filePath) return result.filePath;
+    if (typeof result.path === 'string' && result.path) return result.path;
+  }
+  return null;
+}
 function jsonSidecarPath(markdownPath) {
   return String(markdownPath).replace(/\.md$/i, '') + '.json';
 }
@@ -169,7 +179,7 @@ const action = { label: 'Local Snapshot: Export Redacted Snapshot', icon: 'fa-ca
   const report = makeSnapshot(raw);
   const jsonReport = makeSnapshotJson(raw);
   const fs = require('fs'); let output = null;
-  if (context.app && typeof context.app.showSaveDialog === 'function') output = await context.app.showSaveDialog({ defaultPath: `insomnia-local-snapshot-${timestampSlug()}.md` });
+  if (context.app && typeof context.app.showSaveDialog === 'function') output = normalizeSaveDialogResult(await context.app.showSaveDialog({ defaultPath: `insomnia-local-snapshot-${timestampSlug()}.md` }));
   if (!output) output = await getWritableExportPath(context, `insomnia-local-snapshot-${timestampSlug()}.md`);
   const jsonOutput = jsonSidecarPath(output);
   fs.writeFileSync(output, report, 'utf8');
@@ -182,4 +192,4 @@ const action = { label: 'Local Snapshot: Export Redacted Snapshot', icon: 'fa-ca
 module.exports.workspaceActions = [action];
 module.exports.requestGroupActions = [action];
 module.exports.requestActions = [action];
-module.exports.__test = { countResources, exportInsomnia, fallbackExport, formatRedactedExport, getWritableExportPath, isSecretKey, jsonSidecarPath, makeSnapshot, makeSnapshotJson, parseRedactedExport, redact, redactStructured, redactText, routeInventory, snapshotHash, timestampSlug };
+module.exports.__test = { countResources, exportInsomnia, fallbackExport, formatRedactedExport, getWritableExportPath, isSecretKey, jsonSidecarPath, makeSnapshot, makeSnapshotJson, normalizeSaveDialogResult, parseRedactedExport, redact, redactStructured, redactText, routeInventory, snapshotHash, timestampSlug };

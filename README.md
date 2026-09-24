@@ -110,6 +110,11 @@ MIT
 
 ## Changelog
 
+### 1.1.4
+
+- Snapshot export now supports Electron-style save dialog results and still writes the JSON sidecar.
+
+
 ### 1.1.3
 
 - Adds structured JSON key-aware redaction before Markdown and JSON snapshot output.
