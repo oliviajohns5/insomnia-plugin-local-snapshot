@@ -113,6 +113,33 @@ async function main() {
     assert(fs.existsSync(objectOut), 'object save dialog writes Markdown');
     assert(fs.existsSync(objectOut.replace(/\.md$/i, '.json')), 'object save dialog writes JSON sidecar');
 
+    // A dialog that opened but produced no chosen path must never silently export.
+    const cancelCases = [{ canceled: true, filePath: path.join(tmp, 'existing.md') }, null, undefined];
+    const existing = path.join(tmp, 'existing.md');
+    const existingSidecar = path.join(tmp, 'existing.json');
+    fs.writeFileSync(existing, 'original Markdown');
+    fs.writeFileSync(existingSidecar, 'original JSON');
+    for (const result of cancelCases) {
+      const canceledCtx = ctx(result);
+      canceledCtx.app.getPath = async () => tmp;
+      const before = fs.readdirSync(tmp).sort();
+      await plugin.workspaceActions[0].action(canceledCtx);
+      assert.deepStrictEqual(fs.readdirSync(tmp).sort(), before, 'canceled save creates no files');
+      assert.strictEqual(fs.readFileSync(existing, 'utf8'), 'original Markdown', 'cancel does not overwrite Markdown');
+      assert.strictEqual(fs.readFileSync(existingSidecar, 'utf8'), 'original JSON', 'cancel does not overwrite JSON');
+      assert.deepStrictEqual(canceledCtx.alerts, [], 'cancel does not announce an export');
+    }
+
+    const noDialogCtx = ctx(undefined);
+    noDialogCtx.app.showSaveDialog = undefined;
+    noDialogCtx.app.getPath = async () => tmp;
+    await plugin.requestActions[0].action(noDialogCtx);
+    assert.strictEqual(noDialogCtx.alerts.length, 1, 'unavailable dialog still falls back');
+    const fallbackPath = noDialogCtx.alerts[0].m.match(/^Markdown: (.+)\nJSON: (.+)$/);
+    assert(fallbackPath, 'fallback reports both paths');
+    assert(fs.existsSync(fallbackPath[1]), 'fallback writes Markdown');
+    assert(fs.existsSync(fallbackPath[2]), 'fallback writes JSON');
+
     const unavailableOut = path.join(tmp, 'unavailable.md');
     const unavailableCtx = ctx(unavailableOut, {});
     await plugin.workspaceActions[0].action(unavailableCtx);

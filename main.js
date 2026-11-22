@@ -179,8 +179,12 @@ const action = { label: 'Local Snapshot: Export Redacted Snapshot', icon: 'fa-ca
   const report = makeSnapshot(raw);
   const jsonReport = makeSnapshotJson(raw);
   const fs = require('fs'); let output = null;
-  if (context.app && typeof context.app.showSaveDialog === 'function') output = normalizeSaveDialogResult(await context.app.showSaveDialog({ defaultPath: `insomnia-local-snapshot-${timestampSlug()}.md` }));
-  if (!output) output = await getWritableExportPath(context, `insomnia-local-snapshot-${timestampSlug()}.md`);
+  if (context.app && typeof context.app.showSaveDialog === 'function') {
+    output = normalizeSaveDialogResult(await context.app.showSaveDialog({ defaultPath: `insomnia-local-snapshot-${timestampSlug()}.md` }));
+    if (!output) return;
+  } else {
+    output = await getWritableExportPath(context, `insomnia-local-snapshot-${timestampSlug()}.md`);
+  }
   const jsonOutput = jsonSidecarPath(output);
   fs.writeFileSync(output, report, 'utf8');
   fs.writeFileSync(jsonOutput, jsonReport, 'utf8');
